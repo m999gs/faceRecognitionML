@@ -25,7 +25,7 @@ def TrainModel():
             image_array = np.array(PILImage, "uint8")
             x_train.append(image_array)
             # Adding the name of Candidate in y_train as string.
-            extractName = img.split("#")[1]
+            extractName = int(img.split("#")[2])
             y_train.append(extractName)
     print(y_train)
 
@@ -52,7 +52,7 @@ def faceDetect():
                 roi_gray = gray_img[y:y + h, x:x + w]
                 roi_color = frame[y:y + h, x:x + w]
 
-                img_item = "#" + name + roll + "#" + str(i) + ".png"
+                img_item = "#" + name + "#" + roll + "#" + str(i) + ".png"
                 i += 1
                 cv2.imwrite(train_image_folder_path + img_item, roi_gray)
 
