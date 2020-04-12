@@ -31,7 +31,9 @@ def TrainModel():
     for img in path_array:
         if img.endswith(".png"):
             PILImage = PIL.Image.open(img).convert("L")
-            image_array = np.array(PILImage, "uint8") / 255
+            size = (200 , 200)
+            newImage = PILImage.resize(size,PIL.Image.ANTIALIAS)
+            image_array = np.array(newImage, "uint8") / 255
             x_train.append(image_array)
             # Adding the name of Candidate in y_train as string.
             extractName = int(img.split("#")[2])
@@ -41,10 +43,13 @@ def TrainModel():
     for img in path_array:
         if img.endswith(".png"):
             PILImage = PIL.Image.open(img).convert("L")
-            image_array = np.array(PILImage, "uint8") / 255
+            size = (200 , 200)
+            newImage = PILImage.resize(size,PIL.Image.ANTIALIAS)
+            image_array = np.array(newImage, "uint8") / 255
             x_test.append(image_array)
-            extractName = img.split("#")[1]
+            extractName = int(img.split("#")[2])
             y_test.append(extractName)
+    print(len(x_train[0]),len(x_train[0][0]))
 
 
 
@@ -64,10 +69,20 @@ def TrainModel():
 def faceDetect():
     name = ent.get().replace(" ", "")
     roll = ent2.get().replace(" ", "")
-    if name.isalpha() and roll.isnumeric():
+    student_details_path = root_dir + "/RegisteredStudents/"
+    sroll = set()
+    sname = set()
+    with open(student_details_path + "RegisteredStudents.csv") as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        for line in csv_reader:
+            sroll.add(int(line[0]))
+            sname.add(line[1])
+    temproll = int(roll)
+    if temproll in sroll and name not in sname:
+        msg.configure(text="Please enter your \n unique ROLL Number")
+    elif name.isalpha() and roll.isnumeric():
         cap = cv2.VideoCapture(0)
         train_image_folder_path = root_dir + "/trainImages/"
-        student_details_path = root_dir + "/RegisteredStudents/"
         testing_data = root_dir + "/TestingImages/"
         if not os.path.exists('trainImages'):
             os.makedirs('trainImages')
