@@ -27,7 +27,7 @@ def TrainModel():
             # Adding the name of Candidate in y_train as string.
             extractName = img.split("#")[1]
             y_train.append(extractName)
-    # print(x_train, y_train)
+    print(y_train)
 
 
 def faceDetect():
