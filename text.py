@@ -1,11 +1,20 @@
+import keras
 import cv2
 import os, csv
 import numpy as np
+from keras.models import Sequential
+from keras.optimizers import adam
+
+from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 import PIL.Image
 import tkinter as tr
 from tkinter import *
 import tkinter.font as font
 import tkinter.ttk as ttk
+
+import sklearn
+from sklearn.metrics import accuracy_score
+
 
 face_cascade = cv2.CascadeClassifier(
     "haarcascade_frontalface_default.xml")
@@ -15,19 +24,40 @@ root_dir = os.path.dirname(os.path.abspath(__file__))
 def TrainModel():
     x_train = []
     y_train = []
+    x_test = []
+    y_test = []
     temp = root_dir + "/trainImages/"
     path_array = [os.path.join(temp, i) for i in os.listdir(temp)]
     for img in path_array:
         if img.endswith(".png"):
-            fb = open(img, "rb")
             PILImage = PIL.Image.open(img).convert("L")
-            # Adding images in x_train variable as numpy array.
-            image_array = np.array(PILImage, "uint8")
+            image_array = np.array(PILImage, "uint8") / 255
             x_train.append(image_array)
-            # Adding the name of Candidate in y_train as string.
             extractName = img.split("#")[1]
             y_train.append(extractName)
-    print(y_train)
+    temp = root_dir + "/TestingImages/"
+    path_array = [os.path.join(temp, i) for i in os.listdir(temp)]
+    for img in path_array:
+        if img.endswith(".png"):
+            PILImage = PIL.Image.open(img).convert("L")
+            image_array = np.array(PILImage, "uint8") / 255
+            x_test.append(image_array)
+            extractName = img.split("#")[1]
+            y_test.append(extractName)
+
+
+
+    # cnn_model = Sequential()
+    # cnn_model.add(Conv2D(64, kernel_size=3, activation='relu', input_shape = (28, 28, 1)))
+    # cnn_model.add(Conv2D(32, kernel_size=3, activation='relu'))
+    # cnn_model.add(Flatten())
+    # cnn_model.add(Dense(10, activation='softmax'))
+    #
+    # cnn_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    # cnn_model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=3)
+    #
+    # cnn_model.predict(x_test)
+
 
 
 def faceDetect():
@@ -37,10 +67,13 @@ def faceDetect():
         cap = cv2.VideoCapture(0)
         train_image_folder_path = root_dir + "/trainImages/"
         student_details_path = root_dir + "/RegisteredStudents/"
+        testing_data = root_dir + "/TestingImages/"
         if not os.path.exists('trainImages'):
             os.makedirs('trainImages')
         if not os.path.exists('RegisteredStudents'):
             os.makedirs('RegisteredStudents')
+        if not os.path.exists('TestingImages'):
+            os.makedirs('TestingImages')
         i = 0
 
         while (True):
@@ -55,7 +88,8 @@ def faceDetect():
                 img_item = "#" + name + roll + "#" + str(i) + ".png"
                 i += 1
                 cv2.imwrite(train_image_folder_path + img_item, roi_gray)
-
+                if i<=20:
+                    cv2.imwrite(testing_data + img_item, roi_gray)
                 color = (0, 255, 0)
                 stroke = 1
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
