@@ -8,7 +8,7 @@ import tkinter.font as font
 import tkinter.ttk as ttk
 
 face_cascade = cv2.CascadeClassifier(
-    "/Users/mohitgarg/PycharmProjects/untitled/venv/lib/python3.7/site-packages/cv2/data/haarcascade_frontalface_default.xml")
+    "haarcascade_frontalface_default.xml")
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 
