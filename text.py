@@ -103,9 +103,12 @@ def faceDetect():
 
 
 def TakeAttendance():
+    if not os.path.exists('AttendanceSheetLog'):
+        os.makedirs('AttendanceSheetLog')
     recognizer = cv2.face.LBPHFaceRecognizer_create()
     temp = root_dir + "/TrainedModel/"
     recognizer.read(temp + "trainModel.yml")
+    courseName = ent0.get()
     col_names = ['Roll', 'Name', 'Date', 'Time']
     attendanceSheet = pd.DataFrame(columns=col_names)
     font = cv2.FONT_HERSHEY_TRIPLEX
@@ -140,8 +143,11 @@ def TakeAttendance():
         cv2.imshow('frame', frame)
         if cv2.waitKey(50) & 0xff == ord('q'):
             break
-    cvsFile = "Attendancesheet" + ".csv"
-    attendanceSheet.to_csv(cvsFile, index=False)
+    t = time.time()
+    date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
+    temp = root_dir+ "/AttendanceSheetLog/"
+    cvsFile = courseName +"-Attendancesheet-"+ date + ".csv"
+    attendanceSheet.to_csv(temp+cvsFile, index=False)
     cap.release()
     cv2.destroyAllWindows()
     msg.configure(text="Attendance Marked")
@@ -167,16 +173,25 @@ f2.grid(row=1, column=0, sticky="nsew")
 f3 = tr.Frame(root, background="white", width=700, height=260)
 f3.grid(row=2, column=0, sticky="nsew")
 
+txt = tr.Label(f1, text="Course Code: ", fg='deeppink', bg="white", width=12, font=('times', 20, 'bold'))
+txt.place(x=10, y=70)
+
+ent0 = tr.Entry(f1, bg="white", width=15, fg="black", font=('times', 20), highlightbackground='gold',
+               highlightthickness=1)
+ent0.place(x=135, y=70)
+
 getRes = tr.Button(root, text="TAKE ATTENDANCE", command=TakeAttendance, highlightbackground='gold',
                    highlightthickness=5,
                    fg="#000000", width=30, height=2, activebackground="Black", font=('times', 20, 'bold'))
-getRes.place(x=190, y=70)
+getRes.place(x=325, y=55)
+
 
 cand = tr.Label(root, text="Add Candidate", fg='brown', width=15, height=1, font=('times', 25, 'italic bold'))
 cand.place(x=1, y=154)
 
 txt = tr.Label(f2, text="Name", fg='deeppink', bg="white", width=7, font=('times', 20, 'bold'))
 txt.place(x=1, y=70)
+
 
 ent = tr.Entry(f2, bg="white", width=15, fg="black", font=('times', 20), highlightbackground='gold',
                highlightthickness=1)
