@@ -47,8 +47,9 @@ def faceDetect():
     with open(student_details_path + "RegisteredStudents.csv") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for line in csv_reader:
-            sroll.add(int(line[0]))
-            sname.add(line[1])
+            if line[0] != 'roll':
+                sroll.add(int(line[0]))
+                sname.add(line[1])
     temproll = int(roll)
     if temproll in sroll and name not in sname:
         msg.configure(text="Please enter your \n unique ROLL Number")
@@ -126,7 +127,6 @@ def TakeAttendance():
                 timeStamp = datetime.datetime.fromtimestamp(t).strftime('%H:%M:%S')
                 date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
                 name = student_data.loc[student_data['roll'] == roll]['name'].values
-                print(student_data['roll'])
                 attendanceSheet.loc[len(attendanceSheet)] = [roll, name, date, timeStamp]
             else:
                 name = "unknown-student"
