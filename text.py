@@ -1,69 +1,41 @@
-import keras
 import cv2
 import os, csv
 import numpy as np
-from keras.models import Sequential
-from keras.optimizers import adam
-
-from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
+import pandas as pd
+import datetime
+import time
 import PIL.Image
 import tkinter as tr
 from tkinter import *
 import tkinter.font as font
 import tkinter.ttk as ttk
 
-import sklearn
-from sklearn.metrics import accuracy_score
-
-
-face_cascade = cv2.CascadeClassifier(
-    "haarcascade_frontalface_default.xml")
+face_cascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def TrainModel():
+    if not os.path.exists('TrainedModel'):
+        os.makedirs('TrainedModel')
     x_train = []
     y_train = []
-    x_test = []
-    y_test = []
     temp = root_dir + "/trainImages/"
     path_array = [os.path.join(temp, i) for i in os.listdir(temp)]
     for img in path_array:
         if img.endswith(".png"):
             PILImage = PIL.Image.open(img).convert("L")
-            size = (200 , 200)
-            newImage = PILImage.resize(size,PIL.Image.ANTIALIAS)
-            image_array = np.array(newImage, "uint8") / 255
+            size = (200, 200)
+            newImage = PILImage.resize(size, PIL.Image.ANTIALIAS)
+            image_array = np.array(newImage, "uint8")
             x_train.append(image_array)
             # Adding the name of Candidate in y_train as string.
-            extractName = int(img.split("#")[2])
-            y_train.append(extractName)
-    temp = root_dir + "/TestingImages/"
-    path_array = [os.path.join(temp, i) for i in os.listdir(temp)]
-    for img in path_array:
-        if img.endswith(".png"):
-            PILImage = PIL.Image.open(img).convert("L")
-            size = (200 , 200)
-            newImage = PILImage.resize(size,PIL.Image.ANTIALIAS)
-            image_array = np.array(newImage, "uint8") / 255
-            x_test.append(image_array)
-            extractName = int(img.split("#")[2])
-            y_test.append(extractName)
-    print(len(x_train[0]),len(x_train[0][0]))
-
-
-
-    # cnn_model = Sequential()
-    # cnn_model.add(Conv2D(64, kernel_size=3, activation='relu', input_shape = (28, 28, 1)))
-    # cnn_model.add(Conv2D(32, kernel_size=3, activation='relu'))
-    # cnn_model.add(Flatten())
-    # cnn_model.add(Dense(10, activation='softmax'))
-    #
-    # cnn_model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    # cnn_model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=3)
-    #
-    # cnn_model.predict(x_test)
-
+            extractID = int(img.split("#")[2])
+            y_train.append(extractID)
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.train(x_train, np.array(y_train))
+    temp = root_dir + "/TrainedModel/"
+    recognizer.save(temp + "trainModel.yml")
+    msg.configure(text="The Model has \n Trained successfully")
 
 
 def faceDetect():
@@ -83,13 +55,10 @@ def faceDetect():
     elif name.isalpha() and roll.isnumeric():
         cap = cv2.VideoCapture(0)
         train_image_folder_path = root_dir + "/trainImages/"
-        testing_data = root_dir + "/TestingImages/"
         if not os.path.exists('trainImages'):
             os.makedirs('trainImages')
         if not os.path.exists('RegisteredStudents'):
             os.makedirs('RegisteredStudents')
-        if not os.path.exists('TestingImages'):
-            os.makedirs('TestingImages')
         i = 0
 
         while (True):
@@ -104,8 +73,6 @@ def faceDetect():
                 img_item = "#" + name + "#" + roll + "#" + str(i) + ".png"
                 i += 1
                 cv2.imwrite(train_image_folder_path + img_item, roi_gray)
-                if i<=20:
-                    cv2.imwrite(testing_data + img_item, roi_gray)
                 color = (0, 255, 0)
                 stroke = 1
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
@@ -127,11 +94,57 @@ def faceDetect():
         msg.configure(text=res)
         ent.delete(0, 'end')
         ent2.delete(0, 'end')
-    else: # if there is any error in the candidate registration.
+    else:  # if there is any error in the candidate registration.
         if name.isalpha():
             msg.configure(text="Please Enter valid \n ROLL Number")
         else:
             msg.configure(text="Please enter your NAME")
+
+
+def TakeAttendance():
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    temp = root_dir + "/TrainedModel/"
+    recognizer.read(temp + "trainModel.yml")
+    col_names = ['Roll', 'Name', 'Date', 'Time']
+    attendanceSheet = pd.DataFrame(columns=col_names)
+    font = cv2.FONT_HERSHEY_TRIPLEX
+    student_data = pd.read_csv(root_dir + "/RegisteredStudents/" + "RegisteredStudents.csv")
+    cap = cv2.VideoCapture(0)
+    while (True):
+        ret, frame = cap.read()
+        gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray_img, scaleFactor=1.05, minNeighbors=8)
+
+        for x, y, w, h in faces:
+            roi_gray = gray_img[y:y + h, x:x + w]
+            roll, conf = recognizer.predict(roi_gray)
+
+            color = (255, 179, 0)
+            stroke = 1
+            if conf < 50:
+                t = time.time()
+                timeStamp = datetime.datetime.fromtimestamp(t).strftime('%H:%M:%S')
+                date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
+                name = student_data.loc[student_data['roll'] == roll]['name'].values
+                print(student_data['roll'])
+                attendanceSheet.loc[len(attendanceSheet)] = [roll, name, date, timeStamp]
+            else:
+                name = "unknown-student"
+            cv2.putText(frame, str(name), (x, y), font, 1, color, stroke)
+            img_item = "testing-image.png"
+            cv2.imwrite(img_item, roi_gray)
+            color = (0, 255, 0)
+            stroke = 1
+            cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
+        attendanceSheet = attendanceSheet.drop_duplicates(subset=['Roll'], keep='first')
+        cv2.imshow('frame', frame)
+        if cv2.waitKey(50) & 0xff == ord('q'):
+            break
+    cvsFile = "Attendancesheet" + ".csv"
+    attendanceSheet.to_csv(cvsFile, index=False)
+    cap.release()
+    cv2.destroyAllWindows()
+    msg.configure(text="Attendance Marked")
 
 
 # Front End Code
@@ -154,7 +167,8 @@ f2.grid(row=1, column=0, sticky="nsew")
 f3 = tr.Frame(root, background="white", width=700, height=260)
 f3.grid(row=2, column=0, sticky="nsew")
 
-getRes = tr.Button(root, text="TAKE ATTENDANCE", command=quit, highlightbackground='gold', highlightthickness=5,
+getRes = tr.Button(root, text="TAKE ATTENDANCE", command=TakeAttendance, highlightbackground='gold',
+                   highlightthickness=5,
                    fg="#000000", width=30, height=2, activebackground="Black", font=('times', 20, 'bold'))
 getRes.place(x=190, y=70)
 
