@@ -105,52 +105,56 @@ def faceDetect():
 def TakeAttendance():
     if not os.path.exists('AttendanceSheetLog'):
         os.makedirs('AttendanceSheetLog')
-    recognizer = cv2.face.LBPHFaceRecognizer_create()
-    temp = root_dir + "/TrainedModel/"
-    recognizer.read(temp + "trainModel.yml")
     courseName = ent0.get()
-    col_names = ['Roll', 'Name', 'Date', 'Time']
-    attendanceSheet = pd.DataFrame(columns=col_names)
-    font = cv2.FONT_HERSHEY_TRIPLEX
-    student_data = pd.read_csv(root_dir + "/RegisteredStudents/" + "RegisteredStudents.csv")
-    cap = cv2.VideoCapture(0)
-    while (True):
-        ret, frame = cap.read()
-        gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = face_cascade.detectMultiScale(gray_img, scaleFactor=1.05, minNeighbors=8)
+    if courseName != "":
+        recognizer = cv2.face.LBPHFaceRecognizer_create()
+        temp = root_dir + "/TrainedModel/"
+        recognizer.read(temp + "trainModel.yml")
+        col_names = ['Roll', 'Name', 'Date', 'Time']
+        attendanceSheet = pd.DataFrame(columns=col_names)
+        font = cv2.FONT_HERSHEY_TRIPLEX
+        student_data = pd.read_csv(root_dir + "/RegisteredStudents/" + "RegisteredStudents.csv")
+        cap = cv2.VideoCapture(0)
+        while (True):
+            ret, frame = cap.read()
+            gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray_img, scaleFactor=1.05, minNeighbors=8)
 
-        for x, y, w, h in faces:
-            roi_gray = gray_img[y:y + h, x:x + w]
-            roll, conf = recognizer.predict(roi_gray)
+            for x, y, w, h in faces:
+                roi_gray = gray_img[y:y + h, x:x + w]
+                roll, conf = recognizer.predict(roi_gray)
 
-            color = (255, 179, 0)
-            stroke = 1
-            if conf < 50:
-                t = time.time()
-                timeStamp = datetime.datetime.fromtimestamp(t).strftime('%H:%M:%S')
-                date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
-                name = student_data.loc[student_data['roll'] == roll]['name'].values
-                attendanceSheet.loc[len(attendanceSheet)] = [roll, name, date, timeStamp]
-            else:
-                name = "unknown-student"
-            cv2.putText(frame, str(name), (x, y), font, 1, color, stroke)
-            img_item = "testing-image.png"
-            cv2.imwrite(img_item, roi_gray)
-            color = (0, 255, 0)
-            stroke = 1
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
-        attendanceSheet = attendanceSheet.drop_duplicates(subset=['Roll'], keep='first')
-        cv2.imshow('frame', frame)
-        if cv2.waitKey(50) & 0xff == ord('q'):
-            break
-    t = time.time()
-    date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
-    temp = root_dir+ "/AttendanceSheetLog/"
-    cvsFile = courseName +"-Attendancesheet-"+ date + ".csv"
-    attendanceSheet.to_csv(temp+cvsFile, index=False)
-    cap.release()
-    cv2.destroyAllWindows()
-    msg.configure(text="Attendance Marked")
+                color = (255, 179, 0)
+                stroke = 1
+                if conf < 50:
+                    t = time.time()
+                    timeStamp = datetime.datetime.fromtimestamp(t).strftime('%H:%M:%S')
+                    date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
+                    name = student_data.loc[student_data['roll'] == roll]['name'].values
+                    name = name[0]
+                    attendanceSheet.loc[len(attendanceSheet)] = [roll, name, date, timeStamp]
+                else:
+                    name = "unknown-student"
+                cv2.putText(frame, str(name), (x, y), font, 1, color, stroke)
+                img_item = "testing-image.png"
+                cv2.imwrite(img_item, roi_gray)
+                color = (0, 255, 0)
+                stroke = 1
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, stroke)
+            attendanceSheet = attendanceSheet.drop_duplicates(subset=['Roll'], keep='first')
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(50) & 0xff == ord('q'):
+                break
+        t = time.time()
+        date = datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
+        temp = root_dir+ "/AttendanceSheetLog/"
+        cvsFile = courseName +"-Attendancesheet-"+ date + ".csv"
+        attendanceSheet.to_csv(temp+cvsFile, index=False)
+        cap.release()
+        cv2.destroyAllWindows()
+        msg.configure(text="Attendance Marked")
+    else:
+        msg.configure(text="Please Enter the \n Course Name")
 
 
 # Front End Code
